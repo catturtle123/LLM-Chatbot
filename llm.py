@@ -8,7 +8,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from config import answer_examples
-
+import streamlit as st
 
 store = {}
 
@@ -50,8 +50,8 @@ def get_retriever():
 
     return retriever
 
-def get_llm(model='gpt-4o'):
-    llm = ChatOpenAI(model='gpt-4o')
+def get_llm(model='gpt-4o', temperature=0.0):
+    llm = ChatOpenAI(model=model, temperature=temperature)
     return llm
 
 def get_dictionary_chain():
@@ -71,9 +71,9 @@ def get_dictionary_chain():
     dictionary_chain = prompt | llm | StrOutputParser()
     return dictionary_chain
 
-def get_rag_chain():
+def get_rag_chain(retriever):
     llm = get_llm()
-    history_aware_retriever = get_history_retriever()
+    history_aware_retriever = retriever
 
     example_prompt = ChatPromptTemplate.from_messages(
         [
@@ -119,9 +119,9 @@ def get_rag_chain():
 
     return conversational_rag_chain
 
-def get_ai_response(user_message):
+def get_ai_response(user_message, session_id, retriever):
     dictionary_chain = get_dictionary_chain()
-    qa_chain = get_rag_chain()
+    qa_chain = get_rag_chain(retriever)
 
     tax_chain = {"input": dictionary_chain} | qa_chain
 
@@ -130,7 +130,7 @@ def get_ai_response(user_message):
             "question": user_message
         },
         config = {
-            "configurable": {"session_id": "abc123"}
+            "configurable": {"session_id": session_id}
         }
     )
 
